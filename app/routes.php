@@ -29,6 +29,7 @@ Route::get('admin/edit/litres/{update_id}', 'AdminController@getReadingDate');
 
 Route::get('admin/add/customer', 'AdminController@showAddCustomerForm');
 Route::get('admin/edit/customer/{tank_id}', 'AdminController@showEditCustomerForm');
+Route::get('admin/archive/customer/{tank_id}', 'AdminController@archiveCustomer');
 Route::post('admin/submit/customer-information', 'AdminController@submitCustomerForm');
 
 Route::get('/admin/dashboard', 'AdminController@showAdminDashboard');
@@ -46,6 +47,7 @@ Route::get('/admin/transaction-log', 'AdminController@showTransactionLogs');
 Route::post('/admin/logs-table', 'AdminController@showLogsTable');
 Route::get('/cron/record-transaction', 'CronController@recordTransactionFromPast');
 Route::post('/admin/save-transaction-log', 'AdminController@saveTransactionLogs');
+Route::get('/admin/delete/log/{transaction_id}', 'AdminController@deleteTransactionLog');
 
 Route::get('/admin/edit/vehicle/{vehicle_id}', 'VehicleController@showVehicleForm');
 Route::post('/admin/submit/vehicle-information', 'VehicleController@submitVehicleForm');

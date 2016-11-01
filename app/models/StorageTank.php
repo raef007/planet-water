@@ -60,4 +60,39 @@ class StorageTank extends Eloquent {
         /*	関数終亁E   */
         return $tank_data;
     }
+    
+    /*-------------------------------------------------------------------------
+	|	Gets all the active tanks
+	|--------------------------------------------------------------------------
+	|	@param [in] 	NONE
+	|	@param [out] 	NONE
+	|	@return 		tank_data   --- Database Record
+	|------------------------------------------------------------------------*/
+    public function getAllArchiveTanks()
+    {
+        $tank_data  = self::where('status', 2)
+            ->get();
+        
+        /*	関数終亁E   */
+        return $tank_data;
+    }
+    
+    /*-------------------------------------------------------------------------
+	|	Sets a Tank Status
+	|--------------------------------------------------------------------------
+	|	@param [in] 	NONE
+	|	@param [out] 	NONE
+	|	@return 		tank_data   --- Database Record
+	|------------------------------------------------------------------------*/
+    public function setCustomerStatus($tank_id, $status)
+    {
+        $sts        = STS_OK;
+        $tank_data  = self::find($tank_id);
+        
+        $tank_data->status  = $status;
+        $tank_data->save();
+        
+        /*	関数終亁E   */
+        return $sts;
+    }
 }

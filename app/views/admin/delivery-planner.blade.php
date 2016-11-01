@@ -63,9 +63,9 @@
                                         </td>
                                         @endif
                                         <td> {{ $delivery_date[$idx]->tank->company_name }} </td>
-                                        <td style = 'text-align: right;'> {{ $delivery_date[$idx]->volume_manual }} </td>
+                                        <td style = 'text-align: right;'> @if (STR_EMPTY != $delivery_date[$idx]->volume_manual) {{ number_format($delivery_date[$idx]->volume_manual, 2) }} @endif </td>
                                         @if ($idx == 0)
-                                        <td  style = 'text-align: right;'rowspan = "{{ count($delivery_date) }}"> {{ $totals[$ctr] }} </td>
+                                        <td  style = 'text-align: right;'rowspan = "{{ count($delivery_date) }}"> @if (STR_EMPTY != $totals[$ctr]) {{ number_format($totals[$ctr], 2) }} @endif</td>
                                         @endif
                                     </tr>
                                     @endfor
@@ -212,7 +212,7 @@
                             @foreach ($company['forecast']['forecast_dump'] as $forecast)
                             
                             @if (date('M d', strtotime($company['forecast']['date_sump'])) == date('M d', strtotime($forecast['date'])))
-                            <div class = 'delivery-slot' style = 'width: 130px; background-color: red; color: #FFFFFF; border-bottom: solid 1px #000000; padding: 4px; margin: 2px; height: 30px;' data-tank-id = "{{ $company['company']['tank_id'] }}" data-litres = "{{ $forecast['litres'] }}" data-delivery = "{{ date('Y-m-d', strtotime('+ '.$days.' Days')) }}"> {{ number_format($forecast['litres'], 2) }} </div>
+                            <div class = 'delivery-slot' style = 'text-align: right; cursor: pointer; width: 130px; background-color: red; color: #FFFFFF; border-bottom: solid 1px #000000; padding: 4px; margin: 2px; height: 30px;' data-tank-id = "{{ $company['company']['tank_id'] }}" data-litres = "{{ $forecast['litres'] }}" data-delivery = "{{ date('Y-m-d', strtotime('+ '.$days.' Days')) }}"> {{ number_format($forecast['litres'], 2) }} </div>
                             @elseif (FALSE !== array_search(date('Y-m-d', strtotime($forecast['date'])), $company['deliveries']['delivery_dates']))
                             
                                 @if ($vehicle_id == $company['deliveries']['vehicles'][array_search(date('Y-m-d', strtotime($forecast['date'])), $company['deliveries']['delivery_dates'])])

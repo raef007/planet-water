@@ -107,13 +107,16 @@ class CompanyCategory extends Eloquent {
             
             foreach ($companies as $company) {
                 $tank['specifications'] = $tank_db->getStorageTankById($company->tank_id);
-                $tank['company']        = $tank_info_db->getTankInformationByTankId($company->tank_id);
-                $tank['forecast']       = $storage_db->getPlannerForecastData($company->tank_id, 60);
-                $tank['delivery']       = $delivery_db->getVehicleDeliveryByTank($vehicle_id, $company->tank_id);
-                $tank['deliveries']     = $delivery_db->getTankScheduledDelivery($company->tank_id);
-                $tank['ccat_id']        = $company->company_category_id;
                 
-                $tanks[$category->category_label][] = $tank;
+                if (1 == $tank['specifications']->status) {
+                    $tank['company']        = $tank_info_db->getTankInformationByTankId($company->tank_id);
+                    $tank['forecast']       = $storage_db->getPlannerForecastData($company->tank_id, 60);
+                    $tank['delivery']       = $delivery_db->getVehicleDeliveryByTank($vehicle_id, $company->tank_id);
+                    $tank['deliveries']     = $delivery_db->getTankScheduledDelivery($company->tank_id);
+                    $tank['ccat_id']        = $company->company_category_id;
+                    
+                    $tanks[$category->category_label][] = $tank;
+                }
             }
         }
 

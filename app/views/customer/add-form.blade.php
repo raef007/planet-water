@@ -96,10 +96,14 @@
                     
                     <div class = 'form-group form-inline'>
                         <div class = 'col-md-12'>
+                            <?php
+                                if (STR_EMPTY != $tank->maximum_capacity) $tank->maximum_capacity = number_format((float)$tank->maximum_capacity, 2);
+                                if (STR_EMPTY != $tank->safety_limit) $tank->safety_limit = number_format((float)$tank->safety_limit, 2);
+                                if (STR_EMPTY != $tank->sump_level) $tank->sump_level = number_format((float)$tank->sump_level, 2);
+                            ?>
                             {{ Form::text('maximum_capacity', $tank->maximum_capacity, array('class' => 'form-control', 'placeholder' => "Tank Size")) }}
                             {{ Form::text('safety_limit', $tank->safety_limit, array('class' => 'form-control', 'placeholder' => "Safety Fill")) }}
                             {{ Form::text('sump_level', $tank->sump_level, array('class' => 'form-control', 'placeholder' => "Sump Level")) }}
-                            {{ Form::text('estimated_usage', $tank->estimated_usage, array('class' => 'form-control', 'placeholder' => "Estimated Usage")) }}
                         </div>
                     </div>
                     
@@ -107,6 +111,12 @@
                     
                     <div class = 'form-group form-inline'>
                         <div class = 'col-md-12'>
+                            <?php
+                                if (STR_EMPTY != $tank->estimated_usage) $tank->estimated_usage = number_format((float)$tank->estimated_usage, 2);
+                                if (STR_EMPTY != $tank->monthly_usage) $tank->monthly_usage = number_format((float)$tank->monthly_usage, 2);
+                                if (STR_EMPTY != $tank->annual_usage) $tank->annual_usage = number_format((float)$tank->annual_usage, 2);
+                            ?>
+                            
                             {{ Form::text('estimated_usage', $tank->estimated_usage, array('class' => 'form-control est-usage-fld', 'placeholder' => "Daily Usage")) }}
                             {{ Form::text('monthly_usage', $tank->monthly_usage, array('class' => 'form-control est-usage-fld', 'placeholder' => "Monthly Usage")) }}
                             {{ Form::text('annual_usage', $tank->annual_usage, array('class' => 'form-control est-usage-fld', 'placeholder' => "Annual Usage")) }}

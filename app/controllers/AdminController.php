@@ -30,14 +30,20 @@ class AdminController extends BaseController
         $tank_db    = new StorageTank;
         $profile_db = new TankInformation;
         $tanks      = $tank_db->getAllActiveTanks();
+        $archives   = $tank_db->getAllArchiveTanks();
         
         foreach ($tanks as $tank) {
             $tank->information = $profile_db->getTankInformationByTankId($tank->tank_id);
         }
         
+        foreach ($archives as $tank) {
+            $tank->information = $profile_db->getTankInformationByTankId($tank->tank_id);
+        }
+        
         return View::make('customer.customer-list',
             array(
-                'tanks' => $tanks
+                'tanks'     => $tanks,
+                'archives'  => $archives
             )
         );
     }
@@ -187,6 +193,25 @@ class AdminController extends BaseController
         );
     }
     
+    public function archiveCustomer($tank_id)
+    {
+        $sts        = 2;
+        
+        $tank_db    = new StorageTank;
+        $tank       = $tank_db->getStorageTankById($tank_id);
+        
+        if (2 == $tank->status) {
+            $sts    = 1;
+        }
+        else {
+            $sts    = 2;
+        }
+        
+        $tank_db->setCustomerStatus($tank_id, $sts);
+        
+        return Redirect::To('admin/customer/list');
+    }
+    
     public function submitCustomerForm()
     {
         /*--------------------------------------------------------------------
@@ -243,13 +268,9 @@ class AdminController extends BaseController
 		    'business_days.required'    => 'The Business Days is required.',
             
 		    'maximum_capacity.required' => 'The Tank Size is required.',
-		    'maximum_capacity.numeric'  => 'The Tank Size should be numeric.',
 		    'safety_limit.required'     => 'The Safety Fill is required.',
-            'safety_limit.numeric'      => 'The Safety Fill should be numeric.',
 		    'sump_level.required'       => 'The Sump Level is required.',
-            'sump_level.numeric'        => 'The Sump Level should be numeric.',
 		    'estimated_usage.required'  => 'The Estimated usage is required.',
-            'estimated_usage.numeric'   => 'The Estimated usage should be numeric.',
 		);
 
 		$rules = array(
@@ -263,12 +284,12 @@ class AdminController extends BaseController
             
 	        'contact_email'     => 'required',
             
-	        'business_days'     => 'required|numeric',
+	        'business_days'     => 'required',
             
-	        'maximum_capacity'  => 'required|numeric',
-	        'safety_limit'      => 'required|numeric',
-	        'sump_level'        => 'required|numeric',
-	        'estimated_usage'   => 'required|numeric',
+	        'maximum_capacity'  => 'required',
+	        'safety_limit'      => 'required',
+	        'sump_level'        => 'required',
+	        'estimated_usage'   => 'required',
 	    );
         
         $validator = Validator::make(Input::all(), $rules, $messages);
@@ -293,12 +314,12 @@ class AdminController extends BaseController
             );
             
             $data_tank = array(
-                'maximum_capacity'  => $input['maximum_capacity'],
-                'safety_limit'      => $input['safety_limit'],
-                'sump_level'        => $input['sump_level'],
-                'estimated_usage'   => $input['estimated_usage'],
-                'monthly_usage'     => $input['monthly_usage'],
-                'annual_usage'      => $input['annual_usage'],
+                'maximum_capacity'  => str_replace(',', '', $input['maximum_capacity']),
+                'safety_limit'      => str_replace(',', '', $input['safety_limit']),
+                'sump_level'        => str_replace(',', '', $input['sump_level']),
+                'estimated_usage'   => str_replace(',', '', $input['estimated_usage']),
+                'monthly_usage'     => str_replace(',', '', $input['monthly_usage']),
+                'annual_usage'      => str_replace(',', '', $input['annual_usage']),
                 
                 'business_days'     => $input['business_days'],
                 
@@ -681,19 +702,8 @@ class AdminController extends BaseController
 		foreach($transaction_ids as $key => $value) {
             $idx++;
             
-            $rules['quantity.'.$key]                = 'numeric';
-            $rules['actual_volume.'.$key]           = 'numeric';
-            $rules['order_date.'.$key]              = 'date_format:"Y-m-d"';
-            $rules['remaining_litres.'.$key]        = 'numeric';
-            $rules['before_fill.'.$key]             = 'numeric';
-            $rules['after_fill.'.$key]              = 'numeric';
-            
-            $messages['quantity.'.$key.'.numeric']          = 'The Quantity '.$idx.' must be a number - please do not use any signs ($, %, #, etc)';
-            $messages['actual_volume.'.$key.'.numeric']     = 'The Actual Litres '.$idx.' must be a number - please do not use any signs ($, %, #, etc)';
-            $messages['order_date.'.$key.'.numeric']        = 'The Order Date format '.$idx.' must be YYYY-MM-DD';
-            $messages['remaining_litres.'.$key.'.numeric']  = 'The Litres at Order '.$idx.' must be a number - please do not use any signs ($, %, #, etc)';
-            $messages['before_fill.'.$key.'.numeric']       = 'The Before Fill '.$idx.' must be a number - please do not use any signs ($, %, #, etc)';
-            $messages['after_fill.'.$key.'.numeric']        = 'The After Fill '.$idx.' must be a number - please do not use any signs ($, %, #, etc)';
+            $rules['transaction_id.'.$key]                  = 'required';
+            $messages['transaction_id.'.$key.'.required']   = 'Transaction ID for field '.$idx.' is required';
 		}
         
         $validator = Validator::make(Input::all(), $rules, $messages);
@@ -707,16 +717,16 @@ class AdminController extends BaseController
                 $data_update    = array(
                     'product'           => $products[$key],
                     'batch'             => $batches[$key],
-                    'quantity'          => $quantities[$key],
+                    'quantity'          => str_replace(',', '', $quantities[$key]),
                     'delivery_docket'   => $delivery_dockets[$key],
                     'invoice_number'    => $invoice_numbers[$key],
-                    'actual_volume'     => $actual_volumes[$key],
+                    'actual_volume'     => str_replace(',', '', $actual_volumes[$key]),
                     'remarks'           => $remarks[$key],
                     'order_date'        => $order_dates[$key],
                     'remarks'           => $remarks[$key],
-                    'remaining_litres'  => $remaining_litres[$key],
-                    'before_fill'       => $before_fills[$key],
-                    'after_fill'        => $after_fills[$key]
+                    'remaining_litres'  => str_replace(',', '', $remaining_litres[$key]),
+                    'before_fill'       => str_replace(',', '', $before_fills[$key]),
+                    'after_fill'        => str_replace(',', '', $after_fills[$key])
                 );
                 
                 $update = DB::table('transaction_logs')
@@ -739,10 +749,10 @@ class AdminController extends BaseController
                         $storage = new StorageUpdate;
                         
                         $storage->tank_id           = $tank_ids[$key];
-                        $storage->remaining_litres  = $after_fills[$key];
+                        $storage->remaining_litres  = str_replace(',', '', $after_fills[$key]);
                         $storage->delivery_made     = 1;
                         $storage->initials          = 'SYS';
-                        $storage->before_delivery   = $before_fills[$key];
+                        $storage->before_delivery   = str_replace(',', '', $before_fills[$key]);
                         $storage->status            = STS_OK;
                         $storage->reading_date      = $delivery_dates[$key];
                         $storage->created_date      = date('Y-m-d H:i:s');
@@ -756,6 +766,13 @@ class AdminController extends BaseController
         }
         
         return json_encode($srv_resp);
+    }
+    
+    public function deleteTransactionLog($transaction_id)
+    {
+        $transaction_db = DB::table('transaction_logs')->where('transaction_id', $transaction_id)->delete();
+        
+        return STS_OK;
     }
     
     public function saveDeliveryRemarks($delivery_id)

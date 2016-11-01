@@ -42,7 +42,13 @@
                                 array('class' => 'form-control', 'placeholder' => "Business Days")) }}
                         </div>
                     </div>
-            
+                    
+                    <div class = 'form-group'>
+                        <div class = 'col-md-12'>
+                            {{ Form::text('delivery_time', $tank_info->delivery_time, array('class' => 'form-control', 'placeholder' => "Delivery Time")) }}
+                        </div>
+                    </div>
+                    
                     <div class = 'col-md-12'> <hr/></div>
                     
                     <h4>Location</h4>
@@ -94,6 +100,17 @@
                             {{ Form::text('safety_limit', $tank->safety_limit, array('class' => 'form-control', 'placeholder' => "Safety Fill")) }}
                             {{ Form::text('sump_level', $tank->sump_level, array('class' => 'form-control', 'placeholder' => "Sump Level")) }}
                             {{ Form::text('estimated_usage', $tank->estimated_usage, array('class' => 'form-control', 'placeholder' => "Estimated Usage")) }}
+                        </div>
+                    </div>
+                    
+                    <h4>Estimated Usage</h4>
+                    
+                    <div class = 'form-group form-inline'>
+                        <div class = 'col-md-12'>
+                            {{ Form::text('estimated_usage', $tank->estimated_usage, array('class' => 'form-control est-usage-fld', 'placeholder' => "Daily Usage")) }}
+                            {{ Form::text('monthly_usage', $tank->monthly_usage, array('class' => 'form-control est-usage-fld', 'placeholder' => "Monthly Usage")) }}
+                            {{ Form::text('annual_usage', $tank->annual_usage, array('class' => 'form-control est-usage-fld', 'placeholder' => "Annual Usage")) }}
+                            
                         </div>
                     </div>
                     
@@ -156,6 +173,32 @@
             }, 'json');
             
             return false; 
+        });
+        
+        $('.est-usage-fld').change(function() {
+            var daily   = 0;
+            var monthly = 0;
+            var annual  = 0;
+            
+            if ('estimated_usage' == $(this).attr('name')) {
+                daily   = parseInt($(this).val());
+                monthly = parseInt($(this).val()) * 30;
+                annual  = parseInt($(this).val()) * 365;
+            }
+            else if ('monthly_usage' == $(this).attr('name')) {
+                daily   = parseInt($(this).val()) / 30;
+                monthly = parseInt($(this).val());
+                annual  = parseInt($(this).val()) * 12;
+            }
+            else if ('annual_usage' == $(this).attr('name')) {
+                daily   = parseInt($(this).val()) / 365;
+                monthly = parseInt($(this).val()) / 12;
+                annual  = parseInt($(this).val());
+            }
+            
+            $('input[name="estimated_usage"]').val(daily);
+            $('input[name="monthly_usage"]').val(monthly);
+            $('input[name="annual_usage"]').val(annual);
         });
     });
 </script>

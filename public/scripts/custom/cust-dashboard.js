@@ -32,7 +32,6 @@ function bindLitresForm()
         $.post($(this).attr('action'), litres_form.serialize(), function(srv_resp) {
             
             if (1 == srv_resp.sts) {
-                //$('#historical-cntr').load(BaseURL+' #historical-tb');
                 location.reload();
             }
             else {

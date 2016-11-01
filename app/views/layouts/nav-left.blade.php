@@ -13,11 +13,21 @@
                         <h3>Today is {{ date('F d') }}</h3>
                         <ul class="nav side-menu">
                         
-                            <li><a href = '{{ URL::To("admin/dashboard") }}'><i class="fa fa-home"></i> Dashboard </a> </li>
+                            <li><a href = '{{ URL::To("admin/transaction-log") }}'><i class="fa fa-home"></i> Transaction Log </a> </li>
+                            
                             <li><a><i class="fa fa-users"></i> Customer <span class="fa fa-chevron-down"></a>
                                 <ul class="nav child_menu">
                                     <li><a href="{{ URL::To('admin/customer/list') }}">Customer List</a></li>
                                     <li><a href="{{ URL::To('admin/add/customer') }}">Add Customer</a></li>
+                                </ul>
+                            </li>
+                            
+                            <li><a href = '{{ URL::To("admin/edit/vehicle/1") }}'><i class="fa fa-truck"></i> Vehicle </a> </li>
+                            
+                            <li><a><i class="fa fa-newspaper-o"></i> Delivery <span class="fa fa-chevron-down"></a>
+                                <ul class="nav child_menu">
+                                    <li><a href="{{ URL::To('admin/delivery-planner/1') }}">Planner</a></li>
+                                    <li><a href="{{ URL::To('admin/delivery-summary/1') }}">Summary</a></li>
                                 </ul>
                             </li>
                             

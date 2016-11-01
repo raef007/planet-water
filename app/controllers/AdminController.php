@@ -141,6 +141,7 @@ class AdminController extends BaseController
         $tank       = new stdClass;
         
         $tank_info->company_name    = STR_EMPTY;
+        $tank_info->delivery_time   = STR_EMPTY;
         $tank_info->address         = STR_EMPTY;
         $tank_info->city            = STR_EMPTY;
         $tank_info->state           = STR_EMPTY;
@@ -156,7 +157,10 @@ class AdminController extends BaseController
         $tank->maximum_capacity     = STR_EMPTY;
         $tank->safety_limit         = STR_EMPTY;
         $tank->sump_level           = STR_EMPTY;
+        
         $tank->estimated_usage      = STR_EMPTY;
+        $tank->monthly_usage        = STR_EMPTY;
+        $tank->annual_usage         = STR_EMPTY;
         
         return View::make('customer.add-form',
             array(
@@ -203,6 +207,7 @@ class AdminController extends BaseController
         
         $input['tank_id']           = Input::get('tank_id');
         $input['company_name']      = Input::get('company_name');
+        $input['delivery_time']     = Input::get('delivery_time');
         
         $input['address']           = Input::get('address');
         $input['city']              = Input::get('city');
@@ -220,6 +225,8 @@ class AdminController extends BaseController
         $input['safety_limit']      = Input::get('safety_limit');
         $input['sump_level']        = Input::get('sump_level');
         $input['estimated_usage']   = Input::get('estimated_usage');
+        $input['monthly_usage']     = Input::get('monthly_usage');
+        $input['annual_usage']      = Input::get('annual_usage');
         
         $messages = array(
 		    'company_name.required' => 'The Customer Name is required.',
@@ -290,6 +297,8 @@ class AdminController extends BaseController
                 'safety_limit'      => $input['safety_limit'],
                 'sump_level'        => $input['sump_level'],
                 'estimated_usage'   => $input['estimated_usage'],
+                'monthly_usage'     => $input['monthly_usage'],
+                'annual_usage'      => $input['annual_usage'],
                 
                 'business_days'     => $input['business_days'],
                 
@@ -299,6 +308,7 @@ class AdminController extends BaseController
             
             $data_customer = array(
                 'company_name'      => $input['company_name'],
+                'delivery_time'     => $input['delivery_time'],
                 
                 'address'           => $input['address'],
                 'city'              => $input['city'],
@@ -377,17 +387,385 @@ class AdminController extends BaseController
         $update_db      = new StorageUpdate;
         $co_cat_db      = new CompanyCategory;
         $category_db    = new VehicleCategory;
+        $delivery_db    = new VehicleDelivery;
         
         $update_data    = $update_db->getWaterLevelAlert(20, 15);
         $categories     = $category_db->getVehicleCategoryByVehicle($vehicle_id);
         $companies      = $co_cat_db->getCompanyCategoryByVehicle($vehicle_id);
+        $deliv_data     = $delivery_db->getScheduledDelivery($vehicle_id);
+        $refills        = $delivery_db->getRefillDays($vehicle_id);
+        $deliveries     = $deliv_data[0];
+        $totals         = $deliv_data[1];
         
         return View::make('admin.delivery-planner',
             array(
                 'update_data'   => $update_data,
                 'categories'    => $categories,
-                'companies'     => $companies
+                'companies'     => $companies,
+                'deliveries'    => $deliveries,
+                'totals'        => $totals,
+                'refills'       => $refills,
+                'vehicle_id'    => $vehicle_id
             )
         );
+    }
+    
+    public function showDeliveryForm()
+    {
+        return View::make('modal.modal-create-delivery');
+    }
+    
+    public function getScheduledDelivery()
+    {
+        $tank_id        = Input::get('tank_id');
+        $litres         = Input::get('litres');
+        $delivery_date  = Input::get('delivery_date');
+        $vehicle_id     = Input::get('vehicle_id');
+        
+        $tank_db        = new StorageTank;
+        $delivery_db    = new VehicleDelivery;
+        
+        $tank       = $tank_db->getStorageTankById($tank_id);
+        $delivery   = $delivery_db->getScheduledDeliveryByTank($vehicle_id, $tank_id, $delivery_date);
+        $free_vol   = $delivery_db->getVehicleRemainingLitres($vehicle_id, $delivery_date);
+        
+        $srv_resp['round_down']             = ((int)(($tank->safety_limit - $litres) / 100)) * 100;
+        $srv_resp['round_down_txt']         = number_format($srv_resp['round_down'], 2);
+        
+        $srv_resp['remaining_litres']       = $litres;
+        $srv_resp['litres_txt']             = number_format($srv_resp['remaining_litres'], 2);
+        
+        $srv_resp['delivery_date']          = $delivery_date;
+        $srv_resp['date_txt']               = date('M d', strtotime($delivery_date));
+        
+        $srv_resp['tank_id']                = $tank_id;
+        $srv_resp['delivery_id']            = 0;
+        $srv_resp['vehicle_delivery_id']    = 0;
+        
+        $srv_resp['purchase_number']        = '';
+        $srv_resp['volume_manual']          = '';
+        $srv_resp['safety_fill']            = number_format($tank->safety_limit, 2);
+        $srv_resp['free_volume']            = number_format($free_vol, 2);
+        
+        if ($delivery) {
+            $srv_resp['purchase_number']        = $delivery->purchase_number;
+            $srv_resp['volume_manual']          = $delivery->volume_manual;
+            $srv_resp['vehicle_delivery_id']    = $delivery->vehicle_delivery_id;
+        }
+        
+        return json_encode($srv_resp);
+    }
+    
+    public function createScheduledDelivery()
+    {
+        /*--------------------------------------------------------------------
+        /*	Variable Declaration
+		/*------------------------------------------------------------------*/
+        $messages               = array();
+        $rules                  = array();
+        $srv_resp               = array();
+        $total_added            = 0;
+        
+        $srv_resp['sts']        = STS_NG;
+        $srv_resp['messages']   = array();
+        
+        $purchase_number        = Input::get('purchase_number');
+        $volume_manual          = Input::get('volume_manual');
+        $remaining_litres       = Input::get('remaining_litres');
+        $delivery_date          = Input::get('delivery_date');
+        $tank_id                = Input::get('tank_id');
+        $vehicle_id             = Input::get('vehicle_id');
+        
+        $vehicle_delivery_id    = Input::get('vehicle_delivery_id');
+        
+        $delivery_db    = new VehicleDelivery;
+        $storage_db     = new StorageTank;
+        
+        $tank           = $storage_db->getStorageTankById($tank_id);
+        $free_volume    = $delivery_db->getVehicleRemainingLitres($vehicle_id, $delivery_date);
+        $total_added    = $remaining_litres + $volume_manual;
+        
+        $messages = array(
+		    'volume_manual.numeric'    => 'The Volume must be a number - please do not use any signs ($, %, #, etc)',
+		);
+
+		$rules = array(
+	        'volume_manual'     => 'numeric',
+	    );
+        
+        $validator = Validator::make(Input::all(), $rules, $messages);
+        
+        if ($validator->fails()) {
+            $srv_resp['messages']	= $validator->messages()->all();
+		}
+        else if ($free_volume < $volume_manual) {
+            $srv_resp['messages'][0]    = 'The vehicle cannot carry more than '.$free_volume.' at this time. Please schedule a refill at a date before this delivery.';
+        }
+        else if ($tank->safety_limit < $total_added) {
+            $srv_resp['messages'][0]    = 'The Safety Fill of the tank will be surpassed with the volume inputted';
+        }
+        else {
+            if (0 == $vehicle_delivery_id) {
+                $delivery   = new VehicleDelivery;
+                
+                $delivery->vehicle_id       = $vehicle_id;
+                $delivery->tank_id          = $tank_id;
+                $delivery->remaining_litres = $remaining_litres;
+                $delivery->status           = STS_OK;
+                $delivery->delivery_date    = $delivery_date;
+                $delivery->created_date     = date('Y-m-d');
+            }
+            else {
+                $delivery   = VehicleDelivery::find($vehicle_delivery_id);
+            }
+            
+            $delivery->purchase_number  = $purchase_number;
+            $delivery->volume_manual    = $volume_manual;
+            $delivery->updated_date     = date('Y-m-d');
+            
+            $delivery->save();
+            
+            $srv_resp['sts']        = STS_OK;
+        }
+        
+        return json_encode($srv_resp);
+    }
+    
+    public function createRefillDay($vehicle_id)
+    {
+        $srv_resp['sts']        = STS_NG;
+        $srv_resp['messages']   = array();
+        
+        $refill_date    = Input::get('refill_date');
+        $refill_num     = Input::get('batch_number');
+        
+        $refill_exist   = VehicleDelivery::where('delivery_date', $refill_date)
+            ->where('status', 3)
+            ->first();
+        
+        if ($refill_exist) {
+            VehicleDelivery::where('vehicle_delivery_id', $refill_exist->vehicle_delivery_id)
+                ->delete();
+        }
+        else {
+            VehicleDelivery::insert(
+                array(
+                    'vehicle_id'        => $vehicle_id,
+                    'purchase_number'   => $refill_num,
+                    'tank_id'           => 0,
+                    'volume_manual'     => 20000,
+                    'status'            => 3,
+                    'delivery_date'     => $refill_date,
+                    'created_date'      => date('Y-m-d'),
+                    'updated_date'      => date('Y-m-d')
+                )
+            );
+            
+            $srv_resp['sts']    = STS_OK;
+        }
+        
+        return $srv_resp;
+    }
+    
+    public function cancelDelivery($vehicle_delivery_id)
+    {
+        VehicleDelivery::where('vehicle_delivery_id', $vehicle_delivery_id)
+                ->delete();
+    }
+    
+    public function showDeliverySummary($vehicle_id)
+    {
+        $delivery_db    = new VehicleDelivery;
+        $deliveries     = $delivery_db->getVehicleDeliverySummary($vehicle_id);
+        
+        return View::make('admin.delivery-summary',
+            array(
+                'deliveries'    => $deliveries,
+                'vehicle_id'    => $vehicle_id,
+            )
+        );
+    }
+    
+    public function sendSummaryEmail()
+    {
+        $email_rcp      = Input::get('email_rcp');
+        $delivery_ids   = Input::get('delivery_ids');
+        $vehicle_id     = Input::get('vehicle_id');
+        
+        $send_list      = array();
+        $delivery_db    = new VehicleDelivery;
+        $deliveries     = $delivery_db->getVehicleDeliverySummary($vehicle_id);
+        
+        if (NULL != $delivery_ids) {
+            foreach ($deliveries as $delivery) {
+                if (in_array($delivery->vehicle_delivery_id, $delivery_ids)) {
+                    $send_list[]    = $delivery;
+                    $comments[]     = Input::get('delivery_remarks_'.$delivery->vehicle_delivery_id);
+                }
+            }
+        }
+        
+        /*
+        return View::make('emails.summary-email',
+            array(
+                'deliveries'    => $send_list,
+                'comments'      => $comments
+            )
+        );
+        */
+        
+        Mail::send('emails.summary-email',
+            array(
+                'deliveries'    => $send_list,
+                'comments'      => $comments
+            ),
+            function($message) use ($email_rcp) {
+                $message->to($email_rcp, $email_rcp)
+                    ->subject('Delivery List');
+            }
+        );
+    }
+    
+    public function showTransactionLogs()
+    {
+        return View::make('admin.transaction-log');
+    }
+    
+    public function showLogsTable()
+    {
+        $from_date  = Input::get('from_date');
+        $to_date    = Input::get('to_date');
+        
+        $deliveries = DB::table('transaction_logs')
+            ->where('delivery_date', '>=', $from_date)
+            ->where('delivery_date', '<=', $to_date)
+            ->where('status', 1)
+            ->get();
+            
+        return View::make('admin.log-table',
+            array(
+                'deliveries'    => $deliveries
+            )
+        );
+    }
+    
+    public function saveTransactionLogs()
+    {
+        $idx            = 0;
+        $messages       = array();
+        $rules          = array();
+        
+        /** Initialize Server Response  */
+        $srv_resp['sts']        = STS_NG;
+        $srv_resp['messages']   = STR_EMPTY;
+        $srv_resp['validator']  = array();
+        
+        $transaction_ids    = Input::get('transaction_id');
+        $tank_ids           = Input::get('tank_id');
+        $delivery_dates     = Input::get('delivery_date');
+        $products           = Input::get('product');
+        $batches            = Input::get('batch');
+        $quantities         = Input::get('quantity');
+        $delivery_dockets   = Input::get('delivery_docket');
+        $invoice_numbers    = Input::get('invoice_number');
+        $actual_volumes     = Input::get('actual_volume');
+        $remarks            = Input::get('remarks');
+        $order_dates        = Input::get('order_date');
+        $remaining_litres   = Input::get('remaining_litres');
+        $before_fills       = Input::get('before_fill');
+        $after_fills        = Input::get('after_fill');
+        
+        /*--------------------------------------------------------------------
+		/*	Sets rules and messages
+		/*------------------------------------------------------------------*/
+		foreach($transaction_ids as $key => $value) {
+            $idx++;
+            
+            $rules['quantity.'.$key]                = 'numeric';
+            $rules['actual_volume.'.$key]           = 'numeric';
+            $rules['order_date.'.$key]              = 'date_format:"Y-m-d"';
+            $rules['remaining_litres.'.$key]        = 'numeric';
+            $rules['before_fill.'.$key]             = 'numeric';
+            $rules['after_fill.'.$key]              = 'numeric';
+            
+            $messages['quantity.'.$key.'.numeric']          = 'The Quantity '.$idx.' must be a number - please do not use any signs ($, %, #, etc)';
+            $messages['actual_volume.'.$key.'.numeric']     = 'The Actual Litres '.$idx.' must be a number - please do not use any signs ($, %, #, etc)';
+            $messages['order_date.'.$key.'.numeric']        = 'The Order Date format '.$idx.' must be YYYY-MM-DD';
+            $messages['remaining_litres.'.$key.'.numeric']  = 'The Litres at Order '.$idx.' must be a number - please do not use any signs ($, %, #, etc)';
+            $messages['before_fill.'.$key.'.numeric']       = 'The Before Fill '.$idx.' must be a number - please do not use any signs ($, %, #, etc)';
+            $messages['after_fill.'.$key.'.numeric']        = 'The After Fill '.$idx.' must be a number - please do not use any signs ($, %, #, etc)';
+		}
+        
+        $validator = Validator::make(Input::all(), $rules, $messages);
+        
+        if ($validator->fails()) {
+            $srv_resp['messages']	= $validator->messages()->all();
+            $srv_resp['rules']      = $validator->failed();
+        }
+        else {
+            foreach ($transaction_ids as $key => $val) {
+                $data_update    = array(
+                    'product'           => $products[$key],
+                    'batch'             => $batches[$key],
+                    'quantity'          => $quantities[$key],
+                    'delivery_docket'   => $delivery_dockets[$key],
+                    'invoice_number'    => $invoice_numbers[$key],
+                    'actual_volume'     => $actual_volumes[$key],
+                    'remarks'           => $remarks[$key],
+                    'order_date'        => $order_dates[$key],
+                    'remarks'           => $remarks[$key],
+                    'remaining_litres'  => $remaining_litres[$key],
+                    'before_fill'       => $before_fills[$key],
+                    'after_fill'        => $after_fills[$key]
+                );
+                
+                $update = DB::table('transaction_logs')
+                    ->where('transaction_id', $val)
+                    ->update($data_update);
+                    
+                if ((0 != $tank_ids[$key])
+                && (STR_EMPTY != $before_fills[$key])
+                && (STR_EMPTY != $after_fills[$key])) {
+                    
+                    $storage = StorageUpdate::where('tank_id', $tank_ids[$key])
+                        ->where('reading_date', $delivery_dates[$key])
+                        ->first();
+                        
+                    if ($storage) {
+                        $storage->before_delivery = $before_fills[$key];
+                        $storage->save();
+                    }
+                    else {
+                        $storage = new StorageUpdate;
+                        
+                        $storage->tank_id           = $tank_ids[$key];
+                        $storage->remaining_litres  = $after_fills[$key];
+                        $storage->delivery_made     = 1;
+                        $storage->initials          = 'SYS';
+                        $storage->before_delivery   = $before_fills[$key];
+                        $storage->status            = STS_OK;
+                        $storage->reading_date      = $delivery_dates[$key];
+                        $storage->created_date      = date('Y-m-d H:i:s');
+                        $storage->updated_date      = date('Y-m-d H:i:s');
+                        $storage->save();
+                    }
+                }
+            }
+            
+            $srv_resp['sts']        = STS_OK;
+        }
+        
+        return json_encode($srv_resp);
+    }
+    
+    public function saveDeliveryRemarks($delivery_id)
+    {
+        DB::table('vehicle_deliveries')
+            ->where('vehicle_delivery_id', $delivery_id)
+            ->update(
+                array(
+                    'remarks'   => Input::get('remarks')
+                )
+            );
     }
 }

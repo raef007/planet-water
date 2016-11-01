@@ -473,6 +473,7 @@ class StorageUpdate extends Eloquent {
                         
                         $company['level']           = $litres_now;
                         $company['company_name']    = $tank_info->company_name;
+                        $company['sump_level']      = $tank->sump_level;
                         $company['date_reach']      = date('Y-m-d', strtotime('+'.$day.' Days'));
                         
                         $companies[]                = $company;

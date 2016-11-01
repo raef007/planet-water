@@ -90,7 +90,7 @@ class AccountLoggingController extends BaseController
             $redirect = Redirect::to('/dashboard');
         }
         else if (2 == Auth::user()->user_type) {
-            $redirect = Redirect::to('admin/dashboard');
+            $redirect = Redirect::to('admin/transaction-log');
         }
         else {
             

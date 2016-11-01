@@ -67,7 +67,7 @@
                             {{ Form::open(array('url' => 'add/litres-update', 'id' => 'litres-update')) }}
                             
                             <div class = 'form-group'>
-                                {{ Form::text('litres', '', array('class' => 'form-control', 'placeholder' => "Today's Litres")) }}
+                                {{ Form::text('litres', '', array('class' => 'form-control', 'placeholder' => "Current Level (Litres)")) }}
                             </div>
                             
                             <div class = 'form-group'>

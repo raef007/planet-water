@@ -30,22 +30,28 @@
                                 <th>Tank Size</th>
                                 <th>Safety Fill</th>
                                 <th>Sump Level</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         
                         <tbody>
                             @foreach ($tanks as $tank)
                             <tr>
-                                <td> 
-                                    <a href = '{{ URL::To("/admin/customer/".$tank->tank_id) }}'>
-                                        {{ $tank->information->company_name }}
-                                    </a>
-                                </td>
+                                <td> {{ $tank->information->company_name }} </td>
                                 <td> {{ $tank->information->city }} </td>
                                 <td> {{ $tank->information->contact_number }} </td>
                                 <td> {{ number_format($tank->maximum_capacity, 2) }} </td>
                                 <td> {{ number_format($tank->safety_limit, 2) }} </td>
                                 <td> {{ number_format($tank->sump_level, 2) }} </td>
+                                <td>
+                                    <a href = '{{ URL::To("/admin/customer/".$tank->tank_id) }}'>
+                                        <i class = 'fa fa-bar-chart' style = 'color: green;'> </i>
+                                    </a>
+                                    &nbsp;
+                                    <a href = '{{ URL::To("/admin/edit/customer/".$tank->tank_id) }}'>
+                                        <i class = 'fa fa-pencil-square-o' style = 'color: blue;'> </i>
+                                    </a>
+                                </td>
                             </tr>
                             @endforeach
                         </tbody>

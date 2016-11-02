@@ -90,6 +90,18 @@
                         </div>
                     </div>
                     
+                    <div class = 'form-group'>
+                        <div class = 'col-md-12'>
+                            {{ Form::text('password_plain', $tank_info->password_plain, array('class' => 'form-control', 'placeholder' => "Password")) }}
+                        </div>
+                    </div>
+                    
+                    <div class = 'form-group'>
+                        <div class = 'col-md-12'>
+                            <input class = 'send-creds-tick' type = 'checkbox' name = 'send-creds-tick' value = '1' /> Send Credentials to customer Email
+                        </div>
+                    </div>
+                    
                     <div class = 'col-md-12'> <hr/></div>
                     
                     <h4>Tank Information</h4>

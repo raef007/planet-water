@@ -158,6 +158,7 @@ class AdminController extends BaseController
         $tank_info->contact_person  = STR_EMPTY;
         $tank_info->contact_number  = STR_EMPTY;
         $tank_info->contact_email   = STR_EMPTY;
+        $tank_info->password_plain  = STR_EMPTY;
         
         $tank->business_days        = STR_EMPTY;
         $tank->maximum_capacity     = STR_EMPTY;
@@ -217,7 +218,6 @@ class AdminController extends BaseController
         /*--------------------------------------------------------------------
         /*	Variable Declaration
 		/*------------------------------------------------------------------*/
-        $password               = STR_EMPTY;
         $characters             = array_merge(range('A','Z'), range('a','z'));
         $max                    = count($characters) - 1;
         
@@ -243,6 +243,8 @@ class AdminController extends BaseController
         $input['contact_person']    = Input::get('contact_person');
         $input['contact_number']    = Input::get('contact_number');
         $input['contact_email']     = Input::get('contact_email');
+        $input['password_plain']    = Input::get('password_plain');
+        $input['send-creds-tick']   = Input::get('send-creds-tick');
         
         $input['business_days']     = Input::get('business_days');
         
@@ -264,6 +266,7 @@ class AdminController extends BaseController
             
 		    'contact_email.required'    => 'The Email Address is required.',
 		    'contact_email.email'       => 'The Email Address should be a valid email.',
+		    'password_plain.required'   => 'The Password is required.',
             
 		    'business_days.required'    => 'The Business Days is required.',
             
@@ -282,7 +285,8 @@ class AdminController extends BaseController
 	        'latitude'          => 'numeric',
 	        'longtitude'        => 'numeric',
             
-	        'contact_email'     => 'required',
+	        'contact_email'     => 'required|email',
+	        'password_plain'    => 'required',
             
 	        'business_days'     => 'required',
             
@@ -298,15 +302,9 @@ class AdminController extends BaseController
             $srv_resp['messages']	= $validator->messages()->all();
 		}
         else {
-            
-            for ($ctr = 0; 8 > $ctr; $ctr++) {
-                $rand       = mt_rand(0, $max);
-                $password   .= $characters[$rand];
-            }
-            
             $data_user = array(
                 'email'         => $input['contact_email'],
-                'password'      => Hash::make($password),
+                'password'      => Hash::make($input['password_plain']),
                 
                 'user_type'     => 1,
                 'status'        => STS_OK,
@@ -340,6 +338,7 @@ class AdminController extends BaseController
                 'contact_person'    => $input['contact_person'],
                 'contact_number'    => $input['contact_number'],
                 'contact_email'     => $input['contact_email'],
+                'password_plain'    => $input['password_plain'],
                 
                 'status'            => STS_OK,
                 'updated_date'      => date('Y-m-d H:i:s')
@@ -364,22 +363,12 @@ class AdminController extends BaseController
                     ->insert($data_customer);
                 
                 $srv_resp['tank_id']    = $tank_id;
-                
-                if (0) {
-                Mail::send('emails.user-credentials',
-                    array(
-                        'data_customer' => $data_customer,
-                        'data_user'     => $data_user,
-                        'password'      => $password
-                    ),
-                    function($message) use ($data_user) {
-                        $message->to($data_user['email'], $data_user['email'])
-                            ->subject('Tank Level Tracker - Welcome, You account credentials');
-                    }
-                );
-                }
             }
-            else {                
+            else {
+                $tank_data  = DB::table('storage_tanks')
+                    ->where('tank_id', $input['tank_id'])
+                    ->first();
+                    
                 $upd_sts    = DB::table('storage_tanks')
                     ->where('tank_id', $input['tank_id'])
                     ->update($data_tank);
@@ -388,12 +377,34 @@ class AdminController extends BaseController
                     ->where('tank_id', $input['tank_id'])
                     ->update($data_customer);
                 
+                $upd_sts    = DB::table('user_accounts')
+                    ->where('user_id', $tank_data->user_id)
+                    ->update(array(
+                            'email'     => $input['contact_email'],
+                            'password'  => Hash::make($input['password_plain'])
+                        )
+                    );
+                
                 $srv_resp['tank_id']    = $input['tank_id'];
             }
             
             if (STS_OK == $upd_sts) {
                 $srv_resp['sts']            = STS_OK;
                 $srv_resp['messages'][0]    = 'Requested Operation Successfull';
+                
+                if (NULL != $input['send-creds-tick']) {
+                    Mail::send('emails.user-credentials',
+                        array(
+                            'data_customer' => $data_customer,
+                            'data_user'     => $data_user,
+                            'password'      => $input['password_plain']
+                        ),
+                        function($message) use ($input) {
+                            $message->to($input['contact_email'], $input['contact_email'])
+                                ->subject('Level Tracker - Your account credentials');
+                        }
+                    );
+                }
             }
             else {
                 $srv_resp['messages'][0]    = 'An error occured during update. Please try again.';

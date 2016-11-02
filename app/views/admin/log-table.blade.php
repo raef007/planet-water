@@ -38,7 +38,7 @@
                                             <td> <input type = 'text' name = 'batch[]' value = '{{ $delivery->batch }}'/> </td>
                                             <td> <input type = 'text' name = 'quantity[]' value = '@if (STR_EMPTY != $delivery->quantity) {{ number_format((float)$delivery->quantity, 2) }} @endif'/> </td>
                                             <td> <input data-target = 'dd_{{ $delivery->transaction_id }}' class = 'dd_change' type = 'text' name = 'delivery_docket[]' value = '{{ $delivery->delivery_docket }}'/> </td>
-                                            <td style = 'text-align: right;'> {{ number_format($delivery->planned_volume, 2) }} </td>
+                                            <td style = 'text-align: right;'> @if (STR_EMPTY != $delivery->planned_volume) {{ number_format((float)$delivery->planned_volume, 2) }} @endif </td>
                                             <td> <input id = 'dd_{{ $delivery->transaction_id }}' type = 'text' name = 'invoice_number[]' value = '{{ $delivery->invoice_number }}'/> </td>
                                             <td> <input type = 'text' name = 'actual_volume[]' value = '@if (STR_EMPTY != $delivery->actual_volume) {{ number_format((float)$delivery->actual_volume, 2) }} @endif'/> </td>
                                             <td> {{ date("D d M", strtotime($delivery->delivery_date)) }} </td>

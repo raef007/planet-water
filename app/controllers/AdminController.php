@@ -147,20 +147,23 @@ class AdminController extends BaseController
         $tank       = new stdClass;
         
         $tank_info->company_name    = STR_EMPTY;
-        $tank_info->delivery_time   = STR_EMPTY;
         $tank_info->address         = STR_EMPTY;
         $tank_info->city            = STR_EMPTY;
         $tank_info->state           = STR_EMPTY;
+        $tank_info->zipcode         = STR_EMPTY;
         
         $tank_info->latitude        = STR_EMPTY;
         $tank_info->longtitude      = STR_EMPTY;
+        
+        $tank->business_days        = STR_EMPTY;
+        $tank_info->delivery_time   = STR_EMPTY;
+        $tank_info->delivery_notes  = STR_EMPTY;
         
         $tank_info->contact_person  = STR_EMPTY;
         $tank_info->contact_number  = STR_EMPTY;
         $tank_info->contact_email   = STR_EMPTY;
         $tank_info->password_plain  = STR_EMPTY;
         
-        $tank->business_days        = STR_EMPTY;
         $tank->maximum_capacity     = STR_EMPTY;
         $tank->safety_limit         = STR_EMPTY;
         $tank->sump_level           = STR_EMPTY;
@@ -233,10 +236,12 @@ class AdminController extends BaseController
         $input['tank_id']           = Input::get('tank_id');
         $input['company_name']      = Input::get('company_name');
         $input['delivery_time']     = Input::get('delivery_time');
+        $input['delivery_notes']    = Input::get('delivery_notes');
         
         $input['address']           = Input::get('address');
         $input['city']              = Input::get('city');
         $input['state']             = Input::get('state');
+        $input['zipcode']           = Input::get('zipcode');
         $input['latitude']          = Input::get('latitude');
         $input['longtitude']        = Input::get('longtitude');
         
@@ -248,12 +253,12 @@ class AdminController extends BaseController
         
         $input['business_days']     = Input::get('business_days');
         
-        $input['maximum_capacity']  = Input::get('maximum_capacity');
-        $input['safety_limit']      = Input::get('safety_limit');
-        $input['sump_level']        = Input::get('sump_level');
-        $input['estimated_usage']   = Input::get('estimated_usage');
-        $input['monthly_usage']     = Input::get('monthly_usage');
-        $input['annual_usage']      = Input::get('annual_usage');
+        $input['maximum_capacity']  = str_replace(',', '', Input::get('maximum_capacity'));
+        $input['safety_limit']      = str_replace(',', '', Input::get('safety_limit'));
+        $input['sump_level']        = str_replace(',', '', Input::get('sump_level'));
+        $input['estimated_usage']   = str_replace(',', '', Input::get('estimated_usage'));
+        $input['monthly_usage']     = str_replace(',', '', Input::get('monthly_usage'));
+        $input['annual_usage']      = str_replace(',', '', Input::get('annual_usage'));
         
         $messages = array(
 		    'company_name.required' => 'The Customer Name is required.',
@@ -261,6 +266,7 @@ class AdminController extends BaseController
 		    'address.required'          => 'The Address is required.',
 		    'city.required'             => 'The City is required.',
 		    'state.required'            => 'The State is required.',
+		    'zipcode.required'          => 'The Zipcode is required.',
 		    'latitude.numeric'          => 'The Latitude should be numeric.',
 		    'longtitude.numeric'        => 'The Longtitude should be numeric.',
             
@@ -271,9 +277,15 @@ class AdminController extends BaseController
 		    'business_days.required'    => 'The Business Days is required.',
             
 		    'maximum_capacity.required' => 'The Tank Size is required.',
+		    'maximum_capacity.numeric'  => 'The Tank Size must be a number.',
 		    'safety_limit.required'     => 'The Safety Fill is required.',
+		    'safety_limit.numeric'      => 'The Safety Fill must be a number.',
 		    'sump_level.required'       => 'The Sump Level is required.',
+		    'sump_level.numeric'        => 'The Sump Level must be a number.',
 		    'estimated_usage.required'  => 'The Estimated usage is required.',
+		    'estimated_usage.numeric'   => 'The Estimated usage must be a number.',
+		    'monthly_usage.numeric'     => 'The Monthly usage must be a number.',
+		    'annual_usage.numeric'      => 'The Annual usage must be a number.',
 		);
 
 		$rules = array(
@@ -282,6 +294,7 @@ class AdminController extends BaseController
 	        'address'           => 'required',
 	        'city'              => 'required',
 	        'state'             => 'required',
+	        'zipcode'           => 'required',
 	        'latitude'          => 'numeric',
 	        'longtitude'        => 'numeric',
             
@@ -290,16 +303,18 @@ class AdminController extends BaseController
             
 	        'business_days'     => 'required',
             
-	        'maximum_capacity'  => 'required',
-	        'safety_limit'      => 'required',
-	        'sump_level'        => 'required',
-	        'estimated_usage'   => 'required',
+	        'maximum_capacity'  => 'required|numeric',
+	        'safety_limit'      => 'required|numeric',
+	        'sump_level'        => 'required|numeric',
+	        'estimated_usage'   => 'required|numeric',
+	        'monthly_usage'     => 'sometimes|numeric',
+	        'annual_usage'      => 'sometimes|numeric',
 	    );
         
-        $validator = Validator::make(Input::all(), $rules, $messages);
+        $validator = Validator::make($input, $rules, $messages);
         
         if ($validator->fails()) {
-            $srv_resp['messages']	= $validator->messages()->all();
+            $srv_resp['messages']	= $validator->messages();
 		}
         else {
             $data_user = array(
@@ -312,12 +327,12 @@ class AdminController extends BaseController
             );
             
             $data_tank = array(
-                'maximum_capacity'  => str_replace(',', '', $input['maximum_capacity']),
-                'safety_limit'      => str_replace(',', '', $input['safety_limit']),
-                'sump_level'        => str_replace(',', '', $input['sump_level']),
-                'estimated_usage'   => str_replace(',', '', $input['estimated_usage']),
-                'monthly_usage'     => str_replace(',', '', $input['monthly_usage']),
-                'annual_usage'      => str_replace(',', '', $input['annual_usage']),
+                'maximum_capacity'  => $input['maximum_capacity'],
+                'safety_limit'      => $input['safety_limit'],
+                'sump_level'        => $input['sump_level'],
+                'estimated_usage'   => $input['estimated_usage'],
+                'monthly_usage'     => $input['monthly_usage'],
+                'annual_usage'      => $input['annual_usage'],
                 
                 'business_days'     => $input['business_days'],
                 
@@ -328,10 +343,12 @@ class AdminController extends BaseController
             $data_customer = array(
                 'company_name'      => $input['company_name'],
                 'delivery_time'     => $input['delivery_time'],
+                'delivery_notes'    => $input['delivery_notes'],
                 
                 'address'           => $input['address'],
                 'city'              => $input['city'],
                 'state'             => $input['state'],
+                'zipcode'           => $input['zipcode'],
                 'latitude'          => $input['latitude'],
                 'longtitude'        => $input['longtitude'],
                 

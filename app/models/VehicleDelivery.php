@@ -150,7 +150,7 @@ class VehicleDelivery extends Eloquent {
             ->orderBy('delivery_date', 'asc')
             ->get();
         
-        if ($delivery_data) {
+        if (0 < count($delivery_data)) {
             $date_cmp   = $delivery_data[0]->delivery_date;
         }
         

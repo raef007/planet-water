@@ -5,12 +5,36 @@
 |	@brief	Scripts for Delivery Planner
 |	@details DESCRIPTION: NONE
 |
+|       [PROPERTIES]
+|           MODAL_CNTR............................Delivery Ticket Modal Form
+|           DATE_SLOT.............................Clicked Date slot
+|           REFILL_SLOT...........................Clicked Refill slot
+|
+|       [FUNCTIONS]
+|			initDeliveryTicketForm................Initialize Ticket Form
+|			initDeliveryPlanner...................Initialization of script
+|			loadTicketForm........................Shows the Modal Pop-up
+|			loadRefillForm........................Shows the Modal Refill Form
+|			chooseDateSlot........................Clicking a Date Slot
+|			chooseRefillDate......................Clicking a delivery icon
+|			submitDeliveryTicketForm..............Binds the Delivery Ticket form to the Submit Event
+|			submitRefillForm......................Binds the Refill form to the Submit Event
+|			cancelDeliveryScheduled...............Binds the cancel delivery button to the click Event
+|			reloadElements........................Reloads the changed elements after AJAX calls
+|
 |--------------------------------------------------------------------------*/
 
 var MODAL_CNTR  = $('#modal-create-delivery');
 var DATE_SLOT;
 var REFILL_SLOT;
 
+/**------------------------------------------------------------------------
+|	Initialize Ticket Form
+|--------------------------------------------------------------------------
+|	@param [in]		NONE
+|	@param [out] 	NONE
+|	@return 		NONE
+|------------------------------------------------------------------------*/
 var initDeliveryTicketForm = function(slot_obj)
 {
     /** Display the Pop-up Form */
@@ -181,7 +205,7 @@ var chooseRefillDate = function()
 }
 
 /**------------------------------------------------------------------------
-|	Clicking a Date Slot
+|	Binds the Delivery Ticket form to the Submit Event
 |--------------------------------------------------------------------------
 |	@param [in]		slot_obj    --- Clicked Delivery Slot
 |	@param [out] 	NONE
@@ -238,9 +262,9 @@ var submitDeliveryTicketForm = function()
 }
 
 /**------------------------------------------------------------------------
-|	Clicking a Date Slot
+|	Binds the Refill form to the Submit Event
 |--------------------------------------------------------------------------
-|	@param [in]		slot_obj    --- Clicked Delivery Slot
+|	@param [in]		NONE
 |	@param [out] 	NONE
 |	@return 		NONE
 |------------------------------------------------------------------------*/
@@ -288,7 +312,7 @@ var submitRefillForm = function()
 }
 
 /**------------------------------------------------------------------------
-|	Clicking a Date Slot
+|	Binds the cancel delivery button to the click Event
 |--------------------------------------------------------------------------
 |	@param [in]		slot_obj    --- Clicked Delivery Slot
 |	@param [out] 	NONE
@@ -318,9 +342,9 @@ var cancelDeliveryScheduled = function()
 }
 
 /**------------------------------------------------------------------------
-|	Clicking a Date Slot
+|	Reloads the changed elements after AJAX calls
 |--------------------------------------------------------------------------
-|	@param [in]		slot_obj    --- Clicked Delivery Slot
+|	@param [in]		tank_id --- Tank ID
 |	@param [out] 	NONE
 |	@return 		NONE
 |------------------------------------------------------------------------*/
@@ -334,10 +358,19 @@ var reloadElements = function(tank_id)
 
 $(document).ready(function() {
 
+/**------------------------------------------------------------------------
+|	Initialization of script
+|--------------------------------------------------------------------------
+|	@param [in]		NONE
+|	@param [out] 	NONE
+|	@return 		NONE
+|------------------------------------------------------------------------*/
 function initDeliveryPlanner()
 {
+    /** Displays the data of the Tank in a Bootstrap tooltip    */
     $('[data-toggle="tooltip"]').tooltip();
     
+    /** Initialize Event Bindings   */
     chooseDateSlot();
     chooseRefillDate();
     submitDeliveryTicketForm();
@@ -345,6 +378,7 @@ function initDeliveryPlanner()
     cancelDeliveryScheduled();
 }
 
+/** Initialization  */
 initDeliveryPlanner();
 
 });

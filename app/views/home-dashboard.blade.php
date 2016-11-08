@@ -6,13 +6,33 @@
 @stop
 
 @section('style')
-
+<style>
+    .tank-form-cntr {
+        background: #2A3F54;
+    }
+    
+    .error-msg {
+        display: none;
+    }
+    
+    .delivery-made-sign {
+        color: #7cb5ec;
+    }
+    
+    .delete-sign {
+        color: red;
+    }
+    
+    .update-sign {
+        color: #7cb5ec;
+    }
+</style>
 @stop
 
 @section('content')
     <div class="row">
         <div class="col-md-3 col-sm-4 col-xs-12">
-            <div class="x_panel tile" style = 'background: #2A3F54;'>
+            <div class="x_panel tile tank-form-cntr">
                 <div class="x_title">
                     <h2> {{ $tank_info->company_name }} </h2>
                     
@@ -25,7 +45,7 @@
                         @if (2 == Auth::user()->user_type)
                         <div>
                             <div class = 'col-md-12'>
-                                <div class="alert alert-danger error-msg" role="alert" style = 'display: none;'></div>
+                                <div class="alert alert-danger error-msg" role="alert"></div>
                             </div>
                             {{ Form::open(array('url' => 'admin/update/customer-litres', 'id' => 'litres-update')) }}
                             
@@ -61,7 +81,7 @@
                         @else
                         <div>
                             <div class = 'col-md-12'>
-                                <div class="alert alert-danger error-msg" role="alert" style = 'display: none;'></div>
+                                <div class="alert alert-danger error-msg" role="alert"></div>
                             </div>
                             @if (STS_NG == $input_today)
                             {{ Form::open(array('url' => 'add/litres-update', 'id' => 'litres-update')) }}
@@ -117,7 +137,6 @@
         </div>
         
         <div class="col-md-6 col-sm-4 col-xs-12">
-            <div id="placeholder33" style="height: 260px; display: none" class="demo-placeholder"></div>
             <div>
                 <div id="forecast-chart"></div>
             </div>
@@ -201,7 +220,7 @@
                                 <td>{{ number_format($update->remaining_litres, 2) }}</td>
                                 <td>
                                     @if (STS_OK == $update->delivery_made)
-                                        <center><i class = 'fa fa-circle' style = 'color: #7cb5ec;'> </i></center>
+                                        <center><i class = 'fa fa-circle delivery-made-sign'> </i></center>
                                     @endif
                                 </td>
                                 @if (2 == Auth::user()->user_type)
@@ -214,7 +233,7 @@
                                     {{ number_format($update->before_sump, 2) }}%
                                     @if (date('Y-m-d') == date('Y-m-d', strtotime($update->reading_date)))
                                     <a class = 'delete-litres' href = '{{ URL::to("delete/litres/".$update->update_id) }}'>
-                                        <span style = 'color:red;'>
+                                        <span class = 'delete-sign'>
                                             <i class = 'fa fa-times'> </i> DELETE 
                                         </span>
                                     </a>
@@ -222,12 +241,12 @@
                                     
                                     @if (2 == Auth::user()->user_type)
                                         <a class = 'update-litres' href = '{{ URL::to("admin/edit/litres/".$update->update_id) }}'>
-                                            <span style = 'color:#7cb5ec;'>
+                                            <span class = 'update-sign'>
                                                 <i class = 'fa fa-edit'> </i>
                                             </span>
                                         </a>
                                         <a class = 'delete-litres' href = '{{ URL::to("delete/litres/".$update->update_id) }}'>
-                                            <span style = 'color:red;'>
+                                            <span class = 'delete-sign'>
                                                 <i class = 'fa fa-times'> </i>
                                             </span>
                                         </a>
@@ -293,46 +312,4 @@
 
 @section('javascript')
     <script src="{{ URL::asset('scripts/custom/cust-dashboard.js') }}"></script>
-    <script>
-        $(document).ready(function() {
-            $(".datepicker").datepicker({
-                dateFormat: 'yy-mm-dd',
-                changeMonth: true,
-                changeYear: true,
-                yearRange: '-50:+10',
-                onChangeMonthYear: function(y, m, i) {
-                    var d = i.selectedDay;
-                    $(this).datepicker('setDate', new Date(y, m - 1, d));
-                }
-            });
-        });
-    </script>
-    
-    <script>
-        $(document).ready(function() {
-            var update_link     = $('.update-litres');
-            var update_button   = $('#litres-upd-btn');
-            
-            update_link.click(function() {
-                
-                $.get($(this).attr('href'), function(srv_resp) {
-                    update_button.val('Save Changes');
-                    
-                    if (1 == srv_resp.delivery_made) {
-                        $('input[name="delivery_received"]').prop('checked', true);
-                    }
-                    else {
-                        $('input[name="delivery_received"]').prop('checked', false);
-                    }
-                    
-                    $('input[name="update_id"]').val(srv_resp.update_id);
-                    $('input[name="litres"]').val(srv_resp.remaining_litres);
-                    $('input[name="reading_date"]').val(srv_resp.reading_date);
-                    $('input[name="before_delivery"]').val(srv_resp.before_delivery);
-                }, 'json');
-                
-                return false;
-            });
-        });
-    </script>
 @stop
